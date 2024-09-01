@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensor Data Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background-color: #f0f2f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .container {
+            margin-top: 20px;
+        }
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background-color: #007bff;
+            color: white;
+            font-size: 1.5rem;
+            text-align: center;
+            padding: 10px;
+        }
+        .plotly-chart {
+            width: 100%;
+            height: 400px;
+        }
+        .no-data {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.25rem;
+            color: #6c757d;
+        }
+        .btn-refresh {
+            margin: 20px 0;
+        }
+        .logo {
+            position: absolute;
+            top: 20px;
+            left: 18px;
+            width: 140px;
+            height: 46px;
+            font-size: larger;
+        }
+    </style>
+</head>
+<body>
+   
+    <!-- Logo -->
+    <img src="logo.png" alt="Logo" class="logo"> <!-- Replace 'logo.png' with your logo path -->
+
+    <div class="container">
+        <h1 class="text-center mb-4">Sensor Data Dashboard</h1>
+        <div class="text-center">
+            <button class="btn btn-primary btn-refresh" onclick="fetchSensorData()">Refresh Data</button>
+        </div>
+        <div class="card">
+            <div class="card-header">Temperature Data</div>
+            <div class="card-body">
+                <canvas id="temperatureChart" class="plotly-chart"></canvas>
+                <div id="temperatureMessage" class="no-data"></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">Heart Rate Data</div>
+            <div class="card-body">
+                <canvas id="heartRateChart" class="plotly-chart"></canvas>
+                <div id="heartRateMessage" class="no-data"></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">Blood Oxygen Level Data</div>
+            <div class="card-body">
+                <canvas id="oxygenLevelChart" class="plotly-chart"></canvas>
+                <div id="oxygenLevelMessage" class="no-data"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const apiEndpoint = 'http://localhost:5000/all-data';
+
+        // Create chart instances
+        const temperatureChart = new Chart(document.getElementById('temperatureChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Temperature (°C)',
+                    data: [],
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderWidth: 2,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'minute',
+                            displayFormats: {
+                                minute: 'HH:mm'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Temperature (°C)'
+                        }
+                    }
+                },
+                animation: {
+                    duration: 1000,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+
+        const heartRateChart = new Chart(document.getElementById('heartRateChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Heart Rate (BPM)',
+                    data: [],
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderWidth: 2,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'minute',
+                            displayFormats: {
+                                minute: 'HH:mm'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Heart Rate (BPM)'
+                        }
+                    }
+                },
+                animation: {
+                    duration: 1000,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+
+        const oxygenLevelChart = new Chart(document.getElementById('oxygenLevelChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Oxygen Level (%)',
+                    data: [],
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderWidth: 2,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'minute',
+                            displayFormats: {
+                                minute: 'HH:mm'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Oxygen Level (%)'
+                        }
+                    }
+                },
+                animation: {
+                    duration: 1000,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+
+        async function fetchSensorData() {
+            try {
+                const response = await fetch(apiEndpoint);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('Fetched Data:', data);
+
+                if (!Array.isArray(data) || data.length === 0) {
+                    console.warn('No data available');
+                    showEmptyDataMessage();
+                    return;
+                }
+
+                const temperatureData = {
+                    timestamps: data.map(item => new Date(item.time)),
+                    values: data.map(item => parseFloat(item.bodyTemperature))
+                };
+                const heartRateData = {
+                    timestamps: data.map(item => new Date(item.time)),
+                    values: data.map(item => parseFloat(item.beatsPerMinute))
+                };
+                const oxygenLevelData = {
+                    timestamps: data.map(item => new Date(item.time)),
+                    values: data.map(item => parseFloat(item.SpO2))
+                };
+
+                updateChart(temperatureChart, temperatureData);
+                updateChart(heartRateChart, heartRateData);
+                updateChart(oxygenLevelChart, oxygenLevelData);
+            } catch (error) {
+                console.error('Error fetching sensor data:', error);
+            }
+        }
+
+        function updateChart(chart, data) {
+            // Update chart data and labels
+            chart.data.labels = data.timestamps;
+            chart.data.datasets[0].data = data.values;
+            chart.update();
+        }
+
+        function showEmptyDataMessage() {
+            document.getElementById('temperatureMessage').textContent = 'No temperature data available.';
+            document.getElementById('heartRateMessage').textContent = 'No heart rate data available.';
+            document.getElementById('oxygenLevelMessage').textContent = 'No oxygen level data available.';
+        }
+
+        // Initial data fetch and periodic updates
+        fetchSensorData();
+        setInterval(fetchSensorData, 5000);
+    </script>
+
+</body>
+</html>
